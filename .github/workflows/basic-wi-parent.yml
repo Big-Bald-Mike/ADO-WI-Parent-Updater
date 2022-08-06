@@ -1,5 +1,7 @@
 name: basic-wi-parent
 
+trigger: none
+
 on:
   workflow_call:
     inputs:
@@ -10,4 +12,6 @@ on:
         required: true
         type: string
 
-        
+steps:
+  - script:
+    
