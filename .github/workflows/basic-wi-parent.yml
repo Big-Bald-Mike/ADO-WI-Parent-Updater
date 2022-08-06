@@ -1,0 +1,13 @@
+name: basic-wi-parent
+
+on:
+  workflow_call:
+    inputs:
+      workitemID:
+        required: true
+        type: string
+      token:
+        required: true
+        type: string
+
+        
