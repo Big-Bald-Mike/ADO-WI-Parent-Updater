@@ -1,0 +1,29 @@
+name: ADO WI Parent Updater
+
+description: Update a parent work item to an active state when the child is updated to active.
+
+inputs:
+  workitemID:
+    description: ID of the work item
+    required: true
+  org:
+    description: Organization name for ADO instance
+    required: true
+  project:
+    description: Project name  
+    required: true
+  token:
+    description: PAT with access to ADO instance
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+  - task: PowerShell@2
+    inputs:
+      filePath: 'scripts/WI-Updater.ps1'
+      arguments: |
+        -workitemID ${{ inputs.workitemID }} \
+        -token ${{ inputs.token }} \
+        -org ${{ inputs.org }} \
+        -project ${{ inputs.project }}

@@ -1,0 +1,25 @@
+# This file is provided as a template to be used to call the updater action.
+# Set actions secrets locally in order to populate the necessary fields.
+
+name: ADO WI Parent Updater
+
+inputs:
+  workitemID:
+    description: ID of the work item
+    required: true
+  
+
+
+trigger: none
+
+resources:
+  webhooks:  ### Service Connections in Azure DevOps will not work with hyphens in the name.
+    - webhook: Your_Webhook_Here          ### Webhook alias
+      connection: Your_Webhook_Here    ### Incoming webhook service connection
+
+steps:
+- name: Call updater action
+  uses: Big-Bald-Mike/Azure-WI-Parent-Updater@v1
+    workitemID: ${{ parameters.Basic_WI_Parent.resource.workItemId }}
+    token:  ${{ secrets.ADO_TOKEN }}
+    org:  ${{ secrets.ADO_ORG }}
