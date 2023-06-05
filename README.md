@@ -28,7 +28,7 @@ How to use:
 5. Click Next
 6. URL is in this format:
 
-https://dev.azure.com/{ YOUR PROJECT HERE }/\_apis/public/distributedtask/webhooks/{ YOUR WEBHOOK NAME }/?api-version=6.0-preview
+https://dev.azure.com/{ YOUR ORG HERE }/\_apis/public/distributedtask/webhooks/{ YOUR WEBHOOK NAME }/?api-version=6.0-preview
 
 7. Test and Finish.
 
