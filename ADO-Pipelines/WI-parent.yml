@@ -1,0 +1,17 @@
+name: WI Parent Updater
+
+trigger: none
+
+pr: none
+
+resources:
+  webhooks:
+    - webhook: WIParent      ### Addressable alias for this YAML
+      connection: WIParent   ### Incoming webhook service connection name in ADO
+
+steps:
+- task: PowerShell@2
+  inputs:
+    filePath: 'ADO-Pipelines/scripts/WI-Updater.ps1'
+    arguments: -workitemID ${{ parameters.WIParent.resource.workItemId }} -token $(token) -org $(org) -project $(project)
+    # Be sure to set your ADO access token (secret), org name and project name as pipeline variables in ADO.
