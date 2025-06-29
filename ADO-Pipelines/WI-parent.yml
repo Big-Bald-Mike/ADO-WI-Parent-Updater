@@ -1,17 +1,91 @@
 name: WI Parent Updater
 
+# Webhook-triggered pipeline only
 trigger: none
-
 pr: none
 
+# Pipeline parameters for flexibility
+parameters:
+  - name: scriptPath
+    type: string
+    default: 'ADO-Pipelines/scripts/WI-Updater.ps1'
+    displayName: 'Path to PowerShell script'
+  
+  - name: enableVerboseLogging
+    type: boolean
+    default: false
+    displayName: 'Enable verbose logging'
+  
+  - name: whatIfMode
+    type: boolean
+    default: false
+    displayName: 'Run in What-If mode (no actual updates)'
+
+# Webhook resource
 resources:
   webhooks:
-    - webhook: WIParent      ### Addressable alias for this YAML
-      connection: WIParent   ### Incoming webhook service connection name in ADO
+    - webhook: WIParent      # Addressable alias for this YAML
+      connection: WIParent   # Incoming webhook service connection name in ADO
 
-steps:
-- task: PowerShell@2
-  inputs:
-    filePath: 'ADO-Pipelines/scripts/WI-Updater.ps1'
-    arguments: -workitemID ${{ parameters.WIParent.resource.workItemId }} -token $(token) -org $(org) -project $(project)
-    # Be sure to set your ADO access token (secret), org name and project name as pipeline variables in ADO.
+# Variable groups for better secret management
+variables:
+  - group: 'ADO-WorkItem-Variables'  # Contains: org, project
+  - name: scriptArgs
+    value: >
+      -workitemID ${{ parameters.WIParent.resource.workItemId }}
+      -token $(token)
+      -org $(org)
+      -project $(project)
+      ${{ eq(parameters.enableVerboseLogging, true) && '-Verbose' || '' }}
+      ${{ eq(parameters.whatIfMode, true) && '-WhatIf' || '' }}
+
+stages:
+- stage: UpdateParentWorkItem
+  displayName: 'Update Parent Work Item'
+  jobs:
+  - job: UpdateParent
+    displayName: 'Process Work Item Update'
+    pool:
+      vmImage: 'windows-latest'  # or 'ubuntu-latest' if you prefer
+    
+    steps:
+    - checkout: self
+      displayName: 'Checkout repository'
+    
+    # Validate webhook payload
+    - task: PowerShell@2
+      displayName: 'Validate Webhook Payload'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $workItemId = '${{ parameters.WIParent.resource.workItemId }}'
+          if (-not ($workItemId -match '^\d+$')) {
+            Write-Error "Invalid work item ID received: $workItemId"
+            exit 1
+          }
+          Write-Host "✅ Valid work item ID received: $workItemId"
+        failOnStderr: true
+    
+    # Main script execution
+    - task: PowerShell@2
+      displayName: 'Update Parent Work Item'
+      inputs:
+        filePath: ${{ parameters.scriptPath }}
+        arguments: $(scriptArgs)
+        failOnStderr: true
+        pwsh: true  # Use PowerShell Core for better cross-platform support
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)  # For additional auth if needed
+      timeoutInMinutes: 10
+      retryCountOnTaskFailure: 1
+    
+    # Notification on failure
+    - task: PowerShell@2
+      displayName: 'Notify on Failure'
+      condition: failed()
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "##vso[task.logissue type=error]Parent work item update failed for work item ${{ parameters.WIParent.resource.workItemId }}"
+          # Add additional notification logic here (Teams, Slack, email, etc.)
+        failOnStderr: false
